@@ -1,0 +1,1388 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>d/dx — Differentiate. Think. Conquer.</title>
+  
+  <!-- KaTeX for rendering mathematical notation -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css" />
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js" onload="renderMathInElement(document.body);"></script>
+  
+  <!-- Chart.js for analytics dashboard -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <style>
+    :root {
+      --bg-main: #0a0c10;
+      --bg-card: rgba(18, 22, 31, 0.75);
+      --bg-card-hover: rgba(26, 32, 44, 0.85);
+      --border-color: rgba(255, 255, 255, 0.1);
+      --border-accent: rgba(0, 230, 153, 0.3);
+      --text-main: #f0f4f8;
+      --text-muted: #8a99ad;
+      --accent: #00e699;
+      --accent-hover: #00b377;
+      --accent-glow: rgba(0, 230, 153, 0.2);
+      --blue-accent: #3b82f6;
+      --danger: #ef4444;
+      --warning: #f59e0b;
+      --font-sans: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      --font-mono: 'Fira Code', 'Courier New', monospace;
+    }
+
+    [data-theme="light"] {
+      --bg-main: #f4f6f9;
+      --bg-card: rgba(255, 255, 255, 0.85);
+      --bg-card-hover: rgba(240, 244, 248, 0.95);
+      --border-color: rgba(0, 0, 0, 0.08);
+      --border-accent: rgba(0, 168, 112, 0.4);
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+      --accent: #00a870;
+      --accent-hover: #008055;
+      --accent-glow: rgba(0, 168, 112, 0.15);
+      --blue-accent: #2563eb;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background-color: var(--bg-main);
+      color: var(--text-main);
+      font-family: var(--font-sans);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+      transition: background-color 0.3s ease, color 0.3s ease;
+      background-image: 
+        radial-gradient(circle at 15% 15%, rgba(0, 230, 153, 0.03) 0%, transparent 40%),
+        radial-gradient(circle at 85% 85%, rgba(59, 130, 246, 0.03) 0%, transparent 40%);
+    }
+
+    /* Decorative background symbols */
+    .bg-math-symbol {
+      position: fixed;
+      font-family: 'Times New Roman', serif;
+      font-style: italic;
+      color: var(--text-main);
+      opacity: 0.02;
+      user-select: none;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* Navigation */
+    header {
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      background: var(--bg-card);
+      border-bottom: 1px solid var(--border-color);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      padding: 0.75rem 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      text-decoration: none;
+      color: var(--text-main);
+      cursor: pointer;
+    }
+
+    .brand-logo {
+      font-family: var(--font-mono);
+      font-weight: 800;
+      font-size: 1.5rem;
+      background: linear-gradient(135deg, var(--accent), #3b82f6);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      letter-spacing: -1px;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    .nav-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      padding: 0.5rem 0.85rem;
+      border-radius: 6rem;
+      font-size: 0.9rem;
+      font-weight: 500;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      transition: all 0.2s ease;
+    }
+
+    .nav-btn:hover, .nav-btn.active {
+      color: var(--text-main);
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .nav-btn.active {
+      border-bottom: 2px solid var(--accent);
+      border-radius: 4px;
+    }
+
+    .user-stats {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .stat-badge {
+      display: flex;
+      align-items: center;
+      gap: 0.3rem;
+      font-family: var(--font-mono);
+      font-size: 0.85rem;
+      padding: 0.35rem 0.65rem;
+      border-radius: 20px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border-color);
+    }
+
+    /* Main Container */
+    main {
+      flex: 1;
+      max-width: 1200px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 1.5rem;
+      position: relative;
+      z-index: 1;
+    }
+
+    .view-section {
+      display: none;
+      animation: fadeIn 0.25s ease-in-out;
+    }
+
+    .view-section.active {
+      display: block;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Landing Page */
+    .hero-section {
+      text-align: center;
+      padding: 4rem 1rem 3rem;
+    }
+
+    .hero-title {
+      font-size: 4rem;
+      font-weight: 900;
+      letter-spacing: -1.5px;
+      margin-bottom: 0.5rem;
+    }
+
+    .hero-tagline {
+      font-size: 1.5rem;
+      color: var(--accent);
+      font-family: var(--font-mono);
+      margin-bottom: 1.5rem;
+      letter-spacing: 1px;
+    }
+
+    .hero-subtitle {
+      max-width: 600px;
+      margin: 0 auto 2.5rem;
+      color: var(--text-muted);
+      font-size: 1.1rem;
+      line-height: 1.6;
+    }
+
+    .hero-cta {
+      display: flex;
+      justify-content: center;
+      gap: 1rem;
+      margin-bottom: 4rem;
+    }
+
+    .btn {
+      padding: 0.8rem 1.6rem;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 0.95rem;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      transition: all 0.2s ease;
+      border: 1px solid transparent;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #000;
+      box-shadow: 0 0 15px var(--accent-glow);
+    }
+
+    .btn-primary:hover {
+      background: var(--accent-hover);
+      transform: translateY(-2px);
+    }
+
+    .btn-secondary {
+      background: var(--bg-card);
+      border-color: var(--border-color);
+      color: var(--text-main);
+    }
+
+    .btn-secondary:hover {
+      border-color: var(--accent);
+      background: var(--bg-card-hover);
+    }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 1.5rem;
+      margin-top: 2rem;
+    }
+
+    .feature-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      padding: 1.5rem;
+      border-radius: 12px;
+      text-align: left;
+    }
+
+    .feature-icon {
+      color: var(--accent);
+      margin-bottom: 1rem;
+    }
+
+    /* Generator Controls */
+    .control-panel {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin-bottom: 2rem;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 1rem;
+    }
+
+    .control-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+
+    .control-group label {
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    .control-group select, .control-group input {
+      background: rgba(0, 0, 0, 0.2);
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      padding: 0.6rem;
+      border-radius: 6px;
+      font-family: inherit;
+      outline: none;
+    }
+
+    .control-group select:focus, .control-group input:focus {
+      border-color: var(--accent);
+    }
+
+    /* Math Problem Display Card */
+    .problem-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      padding: 2.5rem;
+      margin-bottom: 2rem;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+      position: relative;
+    }
+
+    .problem-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid var(--border-color);
+      margin-bottom: 1.5rem;
+    }
+
+    .meta-badges {
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    .badge {
+      padding: 0.25rem 0.6rem;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      font-family: var(--font-mono);
+    }
+
+    .badge-isi { background: rgba(147, 51, 234, 0.2); color: #c084fc; border: 1px solid rgba(147, 51, 234, 0.4); }
+    .badge-jeemain { background: rgba(59, 130, 246, 0.2); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.4); }
+    .badge-jeeadv { background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.4); }
+
+    .problem-statement {
+      font-size: 1.25rem;
+      line-height: 1.8;
+      margin-bottom: 2rem;
+      color: var(--text-main);
+    }
+
+    .options-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 0.75rem;
+      margin-bottom: 2rem;
+    }
+
+    @media (min-width: 640px) {
+      .options-grid { grid-template-columns: 1fr 1fr; }
+    }
+
+    .option-btn {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 1rem;
+      text-align: left;
+      cursor: pointer;
+      color: var(--text-main);
+      transition: all 0.15s ease;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .option-btn:hover {
+      border-color: var(--accent);
+      background: rgba(0, 230, 153, 0.05);
+    }
+
+    .option-btn.selected {
+      border-color: var(--accent);
+      background: var(--accent-glow);
+    }
+
+    .input-answer-box {
+      margin-bottom: 2rem;
+    }
+
+    .input-answer-box input {
+      width: 100%;
+      max-width: 300px;
+      padding: 0.8rem 1rem;
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      color: var(--text-main);
+      font-size: 1.1rem;
+      font-family: var(--font-mono);
+      outline: none;
+    }
+
+    .input-answer-box input:focus {
+      border-color: var(--accent);
+    }
+
+    .action-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      align-items: center;
+      justify-content: space-between;
+      border-top: 1px solid var(--border-color);
+      padding-top: 1.5rem;
+    }
+
+    .action-group {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    /* Feedback & Solution Panels */
+    .feedback-box {
+      margin-top: 1.5rem;
+      padding: 1rem 1.25rem;
+      border-radius: 8px;
+      display: none;
+    }
+
+    .feedback-box.correct {
+      display: block;
+      background: rgba(16, 185, 129, 0.15);
+      border: 1px solid rgba(16, 185, 129, 0.4);
+      color: #34d399;
+    }
+
+    .feedback-box.incorrect {
+      display: block;
+      background: rgba(239, 68, 68, 0.15);
+      border: 1px solid rgba(239, 68, 68, 0.4);
+      color: #f87171;
+    }
+
+    .solution-panel, .hints-panel {
+      margin-top: 1.5rem;
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 1.5rem;
+      display: none;
+    }
+
+    .solution-panel h4, .hints-panel h4 {
+      color: var(--accent);
+      margin-bottom: 0.75rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .solution-step {
+      margin-bottom: 1rem;
+      line-height: 1.6;
+    }
+
+    /* Dashboard Grid */
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 1.5rem;
+    }
+
+    .dash-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 1.5rem;
+    }
+
+    .dash-card h3 {
+      font-size: 1.1rem;
+      margin-bottom: 1rem;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .stat-large {
+      font-size: 2.5rem;
+      font-weight: 800;
+      font-family: var(--font-mono);
+      color: var(--accent);
+    }
+
+    /* Lists for Notebook & Saved */
+    .item-list {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .list-item {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 1.25rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 1rem;
+    }
+
+    /* Exam Mode View */
+    .exam-header {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 1rem 1.5rem;
+      margin-bottom: 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .exam-timer {
+      font-family: var(--font-mono);
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--warning);
+    }
+
+    /* Utility Classes */
+    .hidden { display: none !important; }
+    .text-accent { color: var(--accent); }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .hero-title { font-size: 2.5rem; }
+      .problem-card { padding: 1.5rem; }
+      .nav-links { display: none; } /* Could add mobile menu drawer */
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Floating Mathematical Ambient Background Symbols -->
+  <div class="bg-math-symbol" style="top: 10%; left: 5%; font-size: 8rem;">∫</div>
+  <div class="bg-math-symbol" style="top: 60%; left: 80%; font-size: 10rem;">∑</div>
+  <div class="bg-math-symbol" style="top: 75%; left: 10%; font-size: 7rem;">∂</div>
+  <div class="bg-math-symbol" style="top: 20%; left: 85%; font-size: 9rem;">lim</div>
+
+  <!-- Main Navigation Header -->
+  <header>
+    <div class="brand" onclick="switchView('landing')">
+      <div class="brand-logo">d/dx</div>
+    </div>
+
+    <nav class="nav-links">
+      <button class="nav-btn active" id="nav-landing" onclick="switchView('landing')"><i data-lucide="home"></i> Home</button>
+      <button class="nav-btn" id="nav-generator" onclick="switchView('generator')"><i data-lucide="cpu"></i> Practice Engine</button>
+      <button class="nav-btn" id="nav-exam" onclick="switchView('exam')"><i data-lucide="award"></i> Exam Arena</button>
+      <button class="nav-btn" id="nav-dashboard" onclick="switchView('dashboard')"><i data-lucide="bar-chart-3"></i> Dashboard</button>
+      <button class="nav-btn" id="nav-mistakes" onclick="switchView('mistakes')"><i data-lucide="book-open"></i> Mistakes</button>
+      <button class="nav-btn" id="nav-saved" onclick="switchView('saved')"><i data-lucide="bookmark"></i> Saved</button>
+    </nav>
+
+    <div class="user-stats">
+      <div class="stat-badge" title="Daily Streak">
+        <i data-lucide="flame" style="color: #f59e0b;"></i> <span id="user-streak">0</span>
+      </div>
+      <div class="stat-badge" title="Total Experience Points">
+        <i data-lucide="zap" style="color: #00e699;"></i> <span id="user-xp">0</span> XP
+      </div>
+      <button class="nav-btn" onclick="toggleTheme()" title="Toggle Theme"><i data-lucide="sun" id="theme-icon"></i></button>
+    </div>
+  </header>
+
+  <main>
+    <!-- VIEW 1: LANDING PAGE -->
+    <section id="view-landing" class="view-section active">
+      <div class="hero-section">
+        <h1 class="hero-title">d/dx</h1>
+        <div class="hero-tagline">Differentiate. Think. Conquer.</div>
+        <p class="hero-subtitle">
+          An infinite mathematical problem generation and training laboratory specifically optimized for ISI Entrance, JEE Main, and JEE Advanced aspirants.
+        </p>
+        <div class="hero-cta">
+          <button class="btn btn-primary" onclick="switchView('generator')"><i data-lucide="play"></i> Launch Practice Engine</button>
+          <button class="btn btn-secondary" onclick="startQuickExam()"><i data-lucide="clock"></i> Take Mock Exam</button>
+        </div>
+      </div>
+
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="feature-icon"><i data-lucide="infinity"></i></div>
+          <h3>Procedural Problem Engine</h3>
+          <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: 0.5rem;">Never run out of practice problems. Dynamic mathematical templates generate mathematically valid questions on the fly.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon"><i data-lucide="target"></i></div>
+          <h3>ISI & JEE Calibration</h3>
+          <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: 0.5rem;"> Rigorous proofs and non-routine thinking for ISI alongside high-speed multi-concept mechanics for JEE Advanced.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon"><i data-lucide="brain-circuit"></i></div>
+          <h3>Adaptive Skill Scaling</h3>
+          <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: 0.5rem;">The engine tracks accuracy and solving speeds to deliver problems calibrated to your cognitive edge.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- VIEW 2: INFINITE PROBLEM GENERATOR & PRACTICE -->
+    <section id="view-generator" class="view-section">
+      <!-- Config Controls -->
+      <div class="control-panel">
+        <div class="control-group">
+          <label>Target Exam</label>
+          <select id="cfg-exam" onchange="onConfigChange()">
+            <option value="ISI">ISI Entrance</option>
+            <option value="JEE_ADV">JEE Advanced</option>
+            <option value="JEE_MAIN">JEE Main</option>
+          </select>
+        </div>
+        <div class="control-group">
+          <label>Topic</label>
+          <select id="cfg-topic" onchange="onConfigChange()">
+            <option value="ALL">All Topics</option>
+            <option value="Calculus">Calculus</option>
+            <option value="Algebra">Algebra</option>
+            <option value="NumberTheory">Number Theory</option>
+            <option value="Combinatorics">Combinatorics</option>
+            <option value="Geometry">Geometry & Vectors</option>
+          </select>
+        </div>
+        <div class="control-group">
+          <label>Difficulty</label>
+          <select id="cfg-difficulty">
+            <option value="AUTO">Adaptive (Auto)</option>
+            <option value="Standard">Standard</option>
+            <option value="Challenging">Challenging</option>
+            <option value="Olympiad">Olympiad / Extreme</option>
+          </select>
+        </div>
+        <div class="control-group" style="justify-content: flex-end;">
+          <button class="btn btn-primary" onclick="generateNewProblem()"><i data-lucide="refresh-cw"></i> GENERATE PROBLEM</button>
+        </div>
+      </div>
+
+      <!-- Problem Presentation Card -->
+      <div class="problem-card" id="active-problem-card">
+        <div class="problem-meta">
+          <div class="meta-badges">
+            <span class="badge badge-isi" id="card-badge-exam">ISI</span>
+            <span class="badge" style="background: rgba(255,255,255,0.05); color: var(--text-muted);" id="card-badge-topic">Calculus</span>
+          </div>
+          <div style="font-family: var(--font-mono); font-size: 0.85rem; color: var(--text-muted);" id="card-badge-diff">
+            DIFFICULTY: LEVEL 7
+          </div>
+        </div>
+
+        <div class="problem-statement" id="card-statement">
+          Loading problem formulation...
+        </div>
+
+        <!-- Multiple Choice Options -->
+        <div class="options-grid" id="card-options"></div>
+
+        <!-- Numeric / Short Answer Input -->
+        <div class="input-answer-box hidden" id="card-input-box">
+          <label style="display:block; margin-bottom: 0.5rem; font-size: 0.85rem; color: var(--text-muted);">ENTER NUMERICAL ANSWER:</label>
+          <input type="text" id="user-text-answer" placeholder="e.g. 42 or -1/2" autocomplete="off" />
+        </div>
+
+        <!-- Feedback UI -->
+        <div class="feedback-box" id="card-feedback"></div>
+
+        <!-- Hints Container -->
+        <div class="hints-panel" id="card-hints">
+          <h4><i data-lucide="lightbulb"></i> Progressive Hint</h4>
+          <div id="hint-content"></div>
+        </div>
+
+        <!-- Solution Container -->
+        <div class="solution-panel" id="card-solution">
+          <h4><i data-lucide="check-circle"></i> Rigorous Solution Derivation</h4>
+          <div id="solution-content"></div>
+        </div>
+
+        <!-- Card Action Buttons -->
+        <div class="action-bar">
+          <div class="action-group">
+            <button class="btn btn-primary" id="btn-submit" onclick="submitAnswer()"><i data-lucide="send"></i> Submit Answer</button>
+            <button class="btn btn-secondary" onclick="revealHint()"><i data-lucide="help-circle"></i> Hint (<span id="hint-count">0</span>)</button>
+            <button class="btn btn-secondary" onclick="revealSolution()"><i data-lucide="eye"></i> View Solution</button>
+          </div>
+          <div class="action-group">
+            <button class="btn btn-secondary" onclick="toggleSaveCurrentProblem()"><i data-lucide="bookmark" id="save-icon"></i> Save</button>
+            <button class="btn btn-secondary" onclick="generateNewProblem()"><i data-lucide="arrow-right"></i> Next Problem</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- VIEW 3: EXAM ARENA -->
+    <section id="view-exam" class="view-section">
+      <div id="exam-start-screen" style="text-align: center; padding: 3rem 1rem;">
+        <h2>Timed Exam Simulation</h2>
+        <p style="color: var(--text-muted); margin: 1rem 0 2rem;">Simulate real exam conditions under strict time constraints with negative marking.</p>
+        <button class="btn btn-primary" onclick="startExamSession()"><i data-lucide="play"></i> Start 5-Question Sprint (15 Mins)</button>
+      </div>
+
+      <div id="exam-active-screen" class="hidden">
+        <div class="exam-header">
+          <div>
+            <span style="font-weight: 700;" id="exam-progress-text">Question 1 of 5</span>
+          </div>
+          <div class="exam-timer" id="exam-timer-display">15:00</div>
+          <button class="btn btn-secondary" style="color: var(--danger);" onclick="terminateExam()"><i data-lucide="square"></i> End Test</button>
+        </div>
+        <div id="exam-problem-container"></div>
+      </div>
+
+      <div id="exam-results-screen" class="hidden" style="text-align: center; padding: 2rem;">
+        <h2>Examination Summary</h2>
+        <div class="dash-card" style="max-width: 400px; margin: 2rem auto;">
+          <div class="stat-large" id="exam-final-score">0 / 0</div>
+          <p style="color: var(--text-muted); margin-top: 0.5rem;" id="exam-final-acc">Accuracy: 0%</p>
+        </div>
+        <button class="btn btn-primary" onclick="switchView('generator')"><i data-lucide="arrow-left"></i> Return to Practice</button>
+      </div>
+    </section>
+
+    <!-- VIEW 4: ANALYTICS DASHBOARD -->
+    <section id="view-dashboard" class="view-section">
+      <h2 style="margin-bottom: 1.5rem;">Performance Dashboard</h2>
+      <div class="dashboard-grid">
+        <div class="dash-card">
+          <h3>Problems Solved <i data-lucide="check-square"></i></h3>
+          <div class="stat-large" id="dash-total-solved">0</div>
+        </div>
+        <div class="dash-card">
+          <h3>Accuracy <i data-lucide="target"></i></h3>
+          <div class="stat-large" id="dash-accuracy">0%</div>
+        </div>
+        <div class="dash-card">
+          <h3>Skill Rating <i data-lucide="trending-up"></i></h3>
+          <div class="stat-large" id="dash-rating">1200</div>
+        </div>
+      </div>
+
+      <div class="dash-card" style="margin-top: 1.5rem;">
+        <h3>Topic Proficiency Breakdown</h3>
+        <canvas id="topicChart" style="max-height: 250px; width: 100%;"></canvas>
+      </div>
+    </section>
+
+    <!-- VIEW 5: MISTAKE NOTEBOOK -->
+    <section id="view-mistakes" class="view-section">
+      <h2 style="margin-bottom: 1rem;">Mistake Notebook</h2>
+      <p style="color: var(--text-muted); margin-bottom: 1.5rem;">Problems you answered incorrectly are automatically archived here for targeted review.</p>
+      <div class="item-list" id="mistakes-list"></div>
+    </section>
+
+    <!-- VIEW 6: SAVED PROBLEMS -->
+    <section id="view-saved" class="view-section">
+      <h2 style="margin-bottom: 1rem;">Saved Problem Vault</h2>
+      <p style="color: var(--text-muted); margin-bottom: 1.5rem;">Bookmarked questions for revision and key mathematical insights.</p>
+      <div class="item-list" id="saved-list"></div>
+    </section>
+  </main>
+
+  <script>
+    /* ==========================================================================
+       1. STATE & STORAGE MANAGEMENT
+       ========================================================================== */
+    const STORAGE_KEY = 'ddx_platform_state_v1';
+    
+    let state = {
+      xp: 0,
+      streak: 1,
+      lastSolvedDate: null,
+      rating: 1200,
+      history: [], // Array of { problemId, topic, exam, correct, timestamp }
+      savedProblems: [], // Array of problem objects
+      mistakes: [], // Array of problem objects with user answers
+      theme: 'dark'
+    };
+
+    function loadState() {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored) {
+        try { state = { ...state, ...JSON.parse(stored) }; } catch(e) { console.error(e); }
+      }
+      updateUserHeaderUI();
+    }
+
+    function saveState() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      updateUserHeaderUI();
+    }
+
+    function updateUserHeaderUI() {
+      document.getElementById('user-xp').innerText = state.xp;
+      document.getElementById('user-streak').innerText = state.streak;
+    }
+
+    function toggleTheme() {
+      const current = document.documentElement.getAttribute('data-theme');
+      const next = current === 'dark' ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', next);
+      state.theme = next;
+      document.getElementById('theme-icon').setAttribute('data-lucide', next === 'dark' ? 'sun' : 'moon');
+      lucide.createIcons();
+      saveState();
+    }
+
+    /* ==========================================================================
+       2. PROCEDURAL MATHEMATICAL PROBLEM GENERATOR
+       ========================================================================== */
+    const MathUtils = {
+      randomInt: (min, max) => Math.floor(Math.random() * (max - min + 1)) + min,
+      gcd: (a, b) => (b === 0 ? Math.abs(a) : MathUtils.gcd(b, a % b)),
+      choice: (arr) => arr[Math.floor(Math.random() * arr.length)]
+    };
+
+    // Procedural Generator Library across Topics and Exams
+    const Generators = {
+      // 1. CALCULUS: Definite Integral / Limits
+      Calculus: (exam) => {
+        const a = MathUtils.randomInt(1, 5);
+        const b = MathUtils.randomInt(2, 6);
+        const n = MathUtils.randomInt(2, 4);
+
+        if (exam === 'ISI' || exam === 'JEE_ADV') {
+          // Complex Calculus: Integral involving symmetry or properties
+          const ans = (a * Math.PI) / 4;
+          return {
+            id: 'calc_' + Date.now() + '_' + MathUtils.randomInt(100,999),
+            exam: exam,
+            topic: 'Calculus',
+            difficulty: exam === 'ISI' ? 'Olympiad' : 'Challenging',
+            statement: `Evaluate the definite integral: \\[\\int_{0}^{\\pi/2} \\frac{${a} \\cdot \\sin^{${n}}(x)}{\\sin^{${n}}(x) + \\cos^{${n}}(x)} \\, dx\\]`,
+            type: 'MCQ',
+            options: [
+              `\\frac{${a}\\pi}{4}`,
+              `\\frac{${a}\\pi}{2}`,
+              `\\frac{${a + 1}\\pi}{4}`,
+              `0`
+            ],
+            correctAnswer: `\\frac{${a}\\pi}{4}`,
+            hints: [
+              `Use King's Property of definite integrals: \\(\\int_{a}^{b} f(x)dx = \\int_{a}^{b} f(a+b-x)dx\\).`,
+              `Let the integral be \\(I\\). Substitute \\(x \\to \\pi/2 - x\\) and add the two integrals.`
+            ],
+            solution: `Let \\(I = \\int_{0}^{\\pi/2} \\frac{${a} \\sin^{${n}}(x)}{\\sin^{${n}}(x) + \\cos^{${n}}(x)} dx\\).\nUsing \\(\\int_{0}^{a} f(x)dx = \\int_{0}^{a} f(a-x)dx\\):\n\\(I = \\int_{0}^{\\pi/2} \\frac{${a} \\cos^{${n}}(x)}{\\cos^{${n}}(x) + \\sin^{${n}}(x)} dx\\).\nAdding both equations: \\(2I = \\int_{0}^{\\pi/2} ${a} dx = \\frac{${a}\\pi}{2} \\implies I = \\frac{${a}\\pi}{4}\\).`
+          };
+        } else {
+          // JEE Main Polynomial Limit
+          const limitAns = 2 * a;
+          return {
+            id: 'calc_' + Date.now() + '_' + MathUtils.randomInt(100,999),
+            exam: 'JEE_MAIN',
+            topic: 'Calculus',
+            difficulty: 'Standard',
+            statement: `Compute the limit: \\[\\lim_{x \\to ${a}} \\frac{x^2 - ${a*a}}{x - ${a}}\\]`,
+            type: 'NUMERIC',
+            correctAnswer: `${limitAns}`,
+            hints: [
+              `Factorize the numerator using the difference of squares: \\(x^2 - a^2 = (x-a)(x+a)\\).`,
+              `Cancel out the common indeterminate factor \\((x - ${a})\\).`
+            ],
+            solution: `Factorizing the numerator: \\(\\frac{(x - ${a})(x + ${a})}{x - ${a}} = x + ${a}\\).\nEvaluating as \\(x \\to ${a}\\) gives \\(${a} + ${a} = ${limitAns}\\).`
+          };
+        }
+      },
+
+      // 2. ALGEBRA: Quadratic Equations / Roots / Polynomials
+      Algebra: (exam) => {
+        const r1 = MathUtils.randomInt(1, 6);
+        const r2 = MathUtils.randomInt(-6, -1);
+        const b = -(r1 + r2);
+        const c = r1 * r2;
+        const targetVal = r1 * r1 + r2 * r2;
+
+        return {
+          id: 'alg_' + Date.now() + '_' + MathUtils.randomInt(100,999),
+          exam: exam,
+          topic: 'Algebra',
+          difficulty: 'Standard',
+          statement: `If \\(\\alpha\\) and \\(\\beta\\) are the real roots of the quadratic equation \\(x^2 ${b >= 0 ? '+ ' + b : '- ' + Math.abs(b)}x ${c >= 0 ? '+ ' + c : '- ' + Math.abs(c)} = 0\\), determine the exact value of \\(\\alpha^2 + \\beta^2\\).`,
+          type: 'NUMERIC',
+          correctAnswer: `${targetVal}`,
+          hints: [
+            `Recall Vieta's formulas: \\(\\alpha + \\beta = -b/a\\) and \\(\\alpha\\beta = c/a\\).`,
+            `Use the identity \\(\\alpha^2 + \\beta^2 = (\\alpha + \\beta)^2 - 2\\alpha\\beta\\).`
+          ],
+          solution: `From the equation, \\(\\alpha + \\beta = ${-b}\\) and \\(\\alpha\\beta = ${c}\\).\nThus, \\(\\alpha^2 + \\beta^2 = (${-b})^2 - 2(${c}) = ${b*b} - ${2*c} = ${targetVal}\\).`
+        };
+      },
+
+      // 3. NUMBER THEORY: Divisibility / Modular Arithmetic (Ideal for ISI)
+      NumberTheory: (exam) => {
+        const p = MathUtils.choice([7, 11, 13]);
+        const rem = MathUtils.randomInt(1, p - 1);
+        
+        return {
+          id: 'nt_' + Date.now() + '_' + MathUtils.randomInt(100,999),
+          exam: 'ISI',
+          topic: 'Number Theory',
+          difficulty: 'Challenging',
+          statement: `Find the remainder when \\(${p + 1}^{100}\\) is divided by \\(${p}\\).`,
+          type: 'NUMERIC',
+          correctAnswer: `1`,
+          hints: [
+            `Apply the Binomial Theorem to expand \\((${p} + 1)^{100}\\).`,
+            `Every term except the last contains a factor of \\(${p}\\).`
+          ],
+          solution: `\\((${p} + 1)^{100} = \\binom{100}{0}${p}^{100} + \\dots + \\binom{100}{99}${p}^1 + 1\\).\nAll terms except the last are divisible by \\(${p}\\). Hence, the remainder is \\(1\\).`
+        };
+      },
+
+      // 4. COMBINATORICS: Permutations / Selections
+      Combinatorics: (exam) => {
+        const n = MathUtils.randomInt(5, 8);
+        const r = 3;
+        // Calculation nC3
+        const ans = (n * (n - 1) * (n - 2)) / 6;
+
+        return {
+          id: 'comb_' + Date.now() + '_' + MathUtils.randomInt(100,999),
+          exam: exam,
+          topic: 'Combinatorics',
+          difficulty: 'Standard',
+          statement: `Find the number of distinct triangles that can be formed by choosing vertices from a set of \\(${n}\\) non-collinear points in a plane.`,
+          type: 'MCQ',
+          options: [`${ans}`, `${ans + 4}`, `${ans * 2}`, `${ans - 3}`],
+          correctAnswer: `${ans}`,
+          hints: [
+            `A triangle is uniquely formed by selecting any 3 non-collinear points.`,
+            `Use the combinations formula \\(\\binom{n}{r} = \\frac{n!}{r!(n-r)!}\\) with \\(n = ${n}\\) and \\(r = 3\\).`
+          ],
+          solution: `The total number of triangles is given by \\(\\binom{${n}}{3} = \\frac{${n} \\times ${n-1} \\times ${n-2}}{3 \\times 2 \\times 1} = ${ans}\\).`
+        };
+      },
+
+      // 5. GEOMETRY & VECTORS: Dot product / Lines
+      Geometry: (exam) => {
+        const a1 = MathUtils.randomInt(1, 4);
+        const a2 = MathUtils.randomInt(-3, 3);
+        const dotProduct = a1 * 2 + a2 * (-1) + 3;
+
+        return {
+          id: 'geo_' + Date.now() + '_' + MathUtils.randomInt(100,999),
+          exam: exam,
+          topic: 'Geometry',
+          difficulty: 'Standard',
+          statement: `Given two vectors \\(\\vec{u} = ${a1}\\hat{i} + ${a2}\\hat{j} + 1\\hat{k}\\) and \\(\\vec{v} = 2\\hat{i} - 1\\hat{j} + 3\\hat{k}\\), compute the scalar dot product \\(\\vec{u} \\cdot \\vec{v}\\).`,
+          type: 'NUMERIC',
+          correctAnswer: `${dotProduct}`,
+          hints: [
+            `The dot product of \\(a\\hat{i}+b\\hat{j}+c\\hat{k}\\) and \\(d\\hat{i}+e\\hat{j}+f\\hat{k}\\) is \\(ad + be + cf\\).`
+          ],
+          solution: `\\(\\vec{u} \\cdot \\vec{v} = (${a1})(2) + (${a2})(-1) + (1)(3) = ${a1*2} + ${-a2} + 3 = ${dotProduct}\\).`
+        };
+      }
+    };
+
+    let currentProblem = null;
+    let currentHintIndex = 0;
+    let selectedMcqOption = null;
+
+    function generateProblemInstance(exam, topic) {
+      if (topic === 'ALL') {
+        const keys = Object.keys(Generators);
+        topic = MathUtils.choice(keys);
+      }
+      const genFn = Generators[topic] || Generators['Calculus'];
+      return genFn(exam);
+    }
+
+    /* ==========================================================================
+       3. VIEW CONTROLLER & ROUTING
+       ========================================================================== */
+    function switchView(viewId) {
+      document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
+      
+      const targetView = document.getElementById(`view-${viewId}`);
+      const targetNav = document.getElementById(`nav-${viewId}`);
+      
+      if (targetView) targetView.classList.add('active');
+      if (targetNav) targetNav.classList.add('active');
+
+      if (viewId === 'generator' && !currentProblem) {
+        generateNewProblem();
+      } else if (viewId === 'dashboard') {
+        renderDashboard();
+      } else if (viewId === 'mistakes') {
+        renderMistakesView();
+      } else if (viewId === 'saved') {
+        renderSavedView();
+      }
+    }
+
+    /* ==========================================================================
+       4. PRACTICE ENGINE RENDERING & LOGIC
+       ========================================================================== */
+    function onConfigChange() {
+      generateNewProblem();
+    }
+
+    function generateNewProblem() {
+      const exam = document.getElementById('cfg-exam').value;
+      const topic = document.getElementById('cfg-topic').value;
+      
+      currentProblem = generateProblemInstance(exam, topic);
+      currentHintIndex = 0;
+      selectedMcqOption = null;
+
+      // Reset Card UI
+      document.getElementById('card-badge-exam').innerText = currentProblem.exam.replace('_', ' ');
+      document.getElementById('card-badge-exam').className = `badge badge-${currentProblem.exam.toLowerCase().replace('_','')}`;
+      document.getElementById('card-badge-topic').innerText = currentProblem.topic;
+      document.getElementById('card-badge-diff').innerText = `DIFFICULTY: ${currentProblem.difficulty.toUpperCase()}`;
+      
+      document.getElementById('card-statement').innerHTML = currentProblem.statement;
+      
+      // Feedback & Panels
+      const fb = document.getElementById('card-feedback');
+      fb.className = 'feedback-box';
+      fb.style.display = 'none';
+
+      document.getElementById('card-hints').style.display = 'none';
+      document.getElementById('card-solution').style.display = 'none';
+      document.getElementById('hint-count').innerText = currentProblem.hints.length;
+
+      // Render Answer Mode
+      const optionsContainer = document.getElementById('card-options');
+      const inputContainer = document.getElementById('card-input-box');
+
+      optionsContainer.innerHTML = '';
+      if (currentProblem.type === 'MCQ') {
+        optionsContainer.classList.remove('hidden');
+        inputContainer.classList.add('hidden');
+        
+        currentProblem.options.forEach(opt => {
+          const btn = document.createElement('button');
+          btn.className = 'option-btn';
+          btn.innerHTML = `<span>${opt}</span>`;
+          btn.onclick = () => {
+            document.querySelectorAll('.option-btn').forEach(b => b.classList.remove('selected'));
+            btn.classList.add('selected');
+            selectedMcqOption = opt;
+          };
+          optionsContainer.appendChild(btn);
+        });
+      } else {
+        optionsContainer.classList.add('hidden');
+        inputContainer.classList.remove('hidden');
+        document.getElementById('user-text-answer').value = '';
+      }
+
+      // Update Save Icon
+      updateSaveIconState();
+
+      // Render math expressions via KaTeX
+      if (window.renderMathInElement) {
+        renderMathInElement(document.getElementById('active-problem-card'));
+      }
+    }
+
+    function submitAnswer() {
+      if (!currentProblem) return;
+
+      let userAnswer = '';
+      if (currentProblem.type === 'MCQ') {
+        userAnswer = selectedMcqOption;
+      } else {
+        userAnswer = document.getElementById('user-text-answer').value.trim();
+      }
+
+      if (!userAnswer) {
+        alert('Please select or enter an answer before submitting.');
+        return;
+      }
+
+      const isCorrect = (userAnswer === currentProblem.correctAnswer);
+      const fb = document.getElementById('card-feedback');
+
+      if (isCorrect) {
+        fb.className = 'feedback-box correct';
+        fb.innerHTML = `<strong>✓ CORRECT!</strong> Excellent problem solving! +50 XP awarded.`;
+        state.xp += 50;
+        state.history.push({ problemId: currentProblem.id, topic: currentProblem.topic, exam: currentProblem.exam, correct: true, timestamp: Date.now() });
+      } else {
+        fb.className = 'feedback-box incorrect';
+        fb.innerHTML = `<strong>✗ INCORRECT.</strong> Review your steps or request a hint!`;
+        state.history.push({ problemId: currentProblem.id, topic: currentProblem.topic, exam: currentProblem.exam, correct: false, timestamp: Date.now() });
+        
+        // Add to mistake notebook if not present
+        if (!state.mistakes.some(m => m.id === currentProblem.id)) {
+          state.mistakes.push({ ...currentProblem, userAns: userAnswer });
+        }
+      }
+
+      saveState();
+      fb.style.display = 'block';
+    }
+
+    function revealHint() {
+      if (!currentProblem || !currentProblem.hints.length) return;
+      const hintsPanel = document.getElementById('card-hints');
+      const hintContent = document.getElementById('hint-content');
+
+      if (currentHintIndex < currentProblem.hints.length) {
+        const hintText = currentProblem.hints[currentHintIndex];
+        const hintDiv = document.createElement('div');
+        hintDiv.className = 'solution-step';
+        hintDiv.innerHTML = `<strong>Hint ${currentHintIndex + 1}:</strong> ${hintText}`;
+        hintContent.appendChild(hintDiv);
+        currentHintIndex++;
+      }
+      hintsPanel.style.display = 'block';
+
+      if (window.renderMathInElement) {
+        renderMathInElement(hintsPanel);
+      }
+    }
+
+    function revealSolution() {
+      if (!currentProblem) return;
+      const solPanel = document.getElementById('card-solution');
+      const solContent = document.getElementById('solution-content');
+
+      solContent.innerHTML = `<div class="solution-step">${currentProblem.solution}</div>`;
+      solPanel.style.display = 'block';
+
+      if (window.renderMathInElement) {
+        renderMathInElement(solPanel);
+      }
+    }
+
+    function toggleSaveCurrentProblem() {
+      if (!currentProblem) return;
+      const index = state.savedProblems.findIndex(p => p.id === currentProblem.id);
+      if (index >= 0) {
+        state.savedProblems.splice(index, 1);
+      } else {
+        state.savedProblems.push(currentProblem);
+      }
+      saveState();
+      updateSaveIconState();
+    }
+
+    function updateSaveIconState() {
+      const isSaved = state.savedProblems.some(p => p.id === currentProblem.id);
+      const icon = document.getElementById('save-icon');
+      if (isSaved) {
+        icon.style.color = '#00e699';
+        icon.style.fill = '#00e699';
+      } else {
+        icon.style.color = 'currentColor';
+        icon.style.fill = 'none';
+      }
+    }
+
+    /* ==========================================================================
+       5. EXAM ARENA MODE
+       ========================================================================== */
+    let examTimer = null;
+    let examTimeRemaining = 900; // 15 mins
+    let examQuestions = [];
+    let examCurrentIdx = 0;
+    let examScore = 0;
+
+    function startExamSession() {
+      document.getElementById('exam-start-screen').classList.add('hidden');
+      document.getElementById('exam-results-screen').classList.add('hidden');
+      document.getElementById('exam-active-screen').classList.remove('hidden');
+
+      // Generate 5 questions
+      examQuestions = [
+        generateProblemInstance('JEE_ADV', 'Calculus'),
+        generateProblemInstance('ISI', 'Algebra'),
+        generateProblemInstance('ISI', 'NumberTheory'),
+        generateProblemInstance('JEE_MAIN', 'Combinatorics'),
+        generateProblemInstance('JEE_ADV', 'Geometry')
+      ];
+
+      examCurrentIdx = 0;
+      examScore = 0;
+      examTimeRemaining = 900;
+
+      renderExamQuestion();
+      
+      clearInterval(examTimer);
+      examTimer = setInterval(() => {
+        examTimeRemaining--;
+        const mins = Math.floor(examTimeRemaining / 60);
+        const secs = examTimeRemaining % 60;
+        document.getElementById('exam-timer-display').innerText = `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+
+        if (examTimeRemaining <= 0) {
+          terminateExam();
+        }
+      }, 1000);
+    }
+
+    function startQuickExam() {
+      switchView('exam');
+      startExamSession();
+    }
+
+    function renderExamQuestion() {
+      const q = examQuestions[examCurrentIdx];
+      document.getElementById('exam-progress-text').innerText = `Question ${examCurrentIdx + 1} of ${examQuestions.length}`;
+
+      const container = document.getElementById('exam-problem-container');
+      container.innerHTML = `
+        <div class="problem-card">
+          <div class="problem-statement">${q.statement}</div>
+          <div class="input-answer-box">
+            <input type="text" id="exam-user-ans" placeholder="Enter answer..." />
+          </div>
+          <button class="btn btn-primary" onclick="submitExamAnswer()"><i data-lucide="arrow-right"></i> Next Question</button>
+        </div>
+      `;
+      if (window.renderMathInElement) renderMathInElement(container);
+      lucide.createIcons();
+    }
+
+    function submitExamAnswer() {
+      const ans = document.getElementById('exam-user-ans').value.trim();
+      const q = examQuestions[examCurrentIdx];
+
+      if (ans === q.correctAnswer) {
+        examScore += 4; // +4 for correct
+      } else if (ans !== '') {
+        examScore -= 1; // -1 for incorrect
+      }
+
+      examCurrentIdx++;
+      if (examCurrentIdx < examQuestions.length) {
+        renderExamQuestion();
+      } else {
+        terminateExam();
+      }
+    }
+
+    function terminateExam() {
+      clearInterval(examTimer);
+      document.getElementById('exam-active-screen').classList.add('hidden');
+      document.getElementById('exam-results-screen').classList.remove('hidden');
+
+      const maxScore = examQuestions.length * 4;
+      document.getElementById('exam-final-score').innerText = `${examScore} / ${maxScore}`;
+      document.getElementById('exam-final-acc').innerText = `Completed in ${900 - examTimeRemaining} seconds`;
+    }
+
+    /* ==========================================================================
+       6. DASHBOARD & ANALYTICS RENDERING
+       ========================================================================== */
+    let chartInstance = null;
+
+    function renderDashboard() {
+      const totalSolved = state.history.length;
+      const correctSolved = state.history.filter(h => h.correct).length;
+      const accuracy = totalSolved > 0 ? Math.round((correctSolved / totalSolved) * 100) : 0;
+
+      document.getElementById('dash-total-solved').innerText = totalSolved;
+      document.getElementById('dash-accuracy').innerText = `${accuracy}%`;
+      document.getElementById('dash-rating').innerText = 1200 + (correctSolved * 15);
+
+      // Render Chart.js Topic Breakdown
+      const topics = ['Calculus', 'Algebra', 'NumberTheory', 'Combinatorics', 'Geometry'];
+      const topicCounts = topics.map(t => state.history.filter(h => h.topic === t && h.correct).length);
+
+      const ctx = document.getElementById('topicChart').getContext('2d');
+      if (chartInstance) chartInstance.destroy();
+
+      chartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: ['Calculus', 'Algebra', 'Number Theory', 'Combinatorics', 'Geometry'],
+          datasets: [{
+            label: 'Correct Solutions',
+            data: topicCounts,
+            backgroundColor: 'rgba(0, 230, 153, 0.4)',
+            borderColor: '#00e699',
+            borderWidth: 1,
+            borderRadius: 6
+          }]
+        },
+        options: {
+          responsive: true,
+          scales: {
+            y: { beginAtZero: true, ticks: { stepSize: 1, color: '#8a99ad' } },
+            x: { ticks: { color: '#8a99ad' } }
+          },
+          plugins: { legend: { display: false } }
+        }
+      });
+    }
+
+    /* ==========================================================================
+       7. MISTAKES & SAVED VAULT VIEWS
+       ========================================================================== */
+    function renderMistakesView() {
+      const container = document.getElementById('mistakes-list');
+      container.innerHTML = '';
+
+      if (state.mistakes.length === 0) {
+        container.innerHTML = `<p style="color: var(--text-muted);">No recorded mistakes. Outstanding accuracy!</p>`;
+        return;
+      }
+
+      state.mistakes.forEach(m => {
+        const item = document.createElement('div');
+        item.className = 'list-item';
+        item.innerHTML = `
+          <div>
+            <div style="font-size:0.8rem; color:var(--text-muted); margin-bottom:0.4rem;">${m.exam} • ${m.topic}</div>
+            <div>${m.statement}</div>
+            <div style="margin-top:0.5rem; font-size:0.9rem; color: var(--danger);">Your Answer: ${m.userAns} | Correct: ${m.correctAnswer}</div>
+          </div>
+        `;
+        container.appendChild(item);
+      });
+
+      if (window.renderMathInElement) renderMathInElement(container);
+    }
+
+    function renderSavedView() {
+      const container = document.getElementById('saved-list');
+      container.innerHTML = '';
+
+      if (state.savedProblems.length === 0) {
+        container.innerHTML = `<p style="color: var(--text-muted);">No bookmarked problems saved yet.</p>`;
+        return;
+      }
+
+      state.savedProblems.forEach(p => {
+        const item = document.createElement('div');
+        item.className = 'list-item';
+        item.innerHTML = `
+          <div>
+            <div style="font-size:0.8rem; color:var(--text-muted); margin-bottom:0.4rem;">${p.exam} • ${p.topic}</div>
+            <div>${p.statement}</div>
+          </div>
+          <button class="btn btn-secondary" onclick="removeSavedProblem('${p.id}')"><i data-lucide="trash-2"></i></button>
+        `;
+        container.appendChild(item);
+      });
+
+      if (window.renderMathInElement) renderMathInElement(container);
+      lucide.createIcons();
+    }
+
+    function removeSavedProblem(id) {
+      state.savedProblems = state.savedProblems.filter(p => p.id !== id);
+      saveState();
+      renderSavedView();
+    }
+
+    /* ==========================================================================
+       8. INITIALIZATION
+       ========================================================================== */
+    window.addEventListener('DOMContentLoaded', () => {
+      loadState();
+      lucide.createIcons();
+    });
+  </script>
+</body>
+</html>
